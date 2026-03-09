@@ -11,15 +11,15 @@ Parameters:
 
   GitHubOwner:
     Type: String
-    Description: Your GitHub username or organisation name. Example: john-doe
+    Description: "Your GitHub username or organisation name. Example: john-doe"
 
   GitHubRepo:
     Type: String
-    Description: Repository name (not full URL). Example: hardened-infra
+    Description: "Repository name (not full URL). Example: hardened-infra"
 
   GitHubBranch:
     Type: String
-    Description: Branch to watch for changes. Example: main
+    Description: "Branch to watch for changes. Example: main"
     Default: main
 
   # The CodeStar Connection ARN is created manually in AWS Console once,

@@ -149,21 +149,6 @@ export AWS_REGION
 # Auto-detect region from EC2 metadata
 DETECTED_REGION=$(curl -s --connect-timeout 2 \
   http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null || echo "")
-if [[ -z "$DETECTED_REGION" ]]; then
-  DETECTED_REGION=$(aws configure get region 2>/dev/null || echo "")
-fi
-if [[ -n "$DETECTED_REGION" ]]; then
-  info "Auto-detected region: $DETECTED_REGION"
-  ask "AWS Region [$DETECTED_REGION]:"
-  read -r AWS_REGION
-  AWS_REGION="${AWS_REGION:-$DETECTED_REGION}"
-else
-  ask "AWS Region (e.g. ap-south-1):"
-  read -r AWS_REGION
-fi
-[[ -z "$AWS_REGION" ]] && error "Region cannot be empty."
-export AWS_DEFAULT_REGION="$AWS_REGION"
-success "Region set to: $AWS_REGION"
 
 ask "Your name or team (Owner tag, e.g. platform-team):"
 read -r STACK_OWNER
