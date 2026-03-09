@@ -1,0 +1,30 @@
+# terraform.tfvars.example
+# Copy this to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored — never commit real values
+
+aws_region    = "us-east-1"
+environment   = "dev"
+stack_owner   = "your-name-or-team"
+
+os_type    = "Ubuntu"
+os_version = "22.04"
+
+instance_type  = "t3.medium"
+volume_size    = 30
+
+delete_volume_on_termination  = false
+enable_detailed_monitoring    = false
+enable_termination_protection = false
+
+vpc_cidr            = "10.10.0.0/16"
+private_subnet_cidr = "10.10.1.0/24"
+public_subnet_cidr  = "10.10.0.0/24"
+
+patch_schedule           = "cron(0 2 ? * SUN *)"
+log_retention_days       = 14
+snapshot_retention_count = 7
+snapshot_time            = "03:00"
+
+alarm_email          = "you@example.com"
+cpu_alarm_threshold  = 80
+disk_alarm_threshold = 85

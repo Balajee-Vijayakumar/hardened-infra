@@ -1,0 +1,21 @@
+[
+  { "ParameterKey": "Environment",                 "ParameterValue": "dev" },
+  { "ParameterKey": "StackOwner",                  "ParameterValue": "your-name" },
+  { "ParameterKey": "OSType",                      "ParameterValue": "Ubuntu" },
+  { "ParameterKey": "OSVersion",                   "ParameterValue": "22.04" },
+  { "ParameterKey": "InstanceType",                "ParameterValue": "t3.medium" },
+  { "ParameterKey": "VolumeSize",                  "ParameterValue": "30" },
+  { "ParameterKey": "DeleteVolumeOnTermination",   "ParameterValue": "false" },
+  { "ParameterKey": "EnableDetailedMonitoring",    "ParameterValue": "false" },
+  { "ParameterKey": "EnableTerminationProtection", "ParameterValue": "false" },
+  { "ParameterKey": "VpcCIDR",                     "ParameterValue": "10.10.0.0/16" },
+  { "ParameterKey": "SubnetCIDR",                  "ParameterValue": "10.10.1.0/24" },
+  { "ParameterKey": "NATSubnetCIDR",               "ParameterValue": "10.10.0.0/24" },
+  { "ParameterKey": "PatchSchedule",               "ParameterValue": "cron(0 2 ? * SUN *)" },
+  { "ParameterKey": "LogRetentionDays",            "ParameterValue": "7" },
+  { "ParameterKey": "SnapshotRetentionCount",      "ParameterValue": "7" },
+  { "ParameterKey": "SnapshotTime",                "ParameterValue": "03:00" },
+  { "ParameterKey": "AlarmEmail",                  "ParameterValue": "you@example.com" },
+  { "ParameterKey": "CPUAlarmThreshold",           "ParameterValue": "80" },
+  { "ParameterKey": "DiskAlarmThreshold",          "ParameterValue": "85" }
+]

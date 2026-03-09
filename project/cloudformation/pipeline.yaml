@@ -1,0 +1,255 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CodePipeline that watches a GitHub repo and automatically deploys
+  the hardened-ec2.yaml CloudFormation stack on every commit to main.
+
+#########################################
+# PARAMETERS
+#########################################
+
+Parameters:
+
+  GitHubOwner:
+    Type: String
+    Description: Your GitHub username or organisation name. Example: john-doe
+
+  GitHubRepo:
+    Type: String
+    Description: Repository name (not full URL). Example: hardened-infra
+
+  GitHubBranch:
+    Type: String
+    Description: Branch to watch for changes. Example: main
+    Default: main
+
+  # The CodeStar Connection ARN is created manually in AWS Console once,
+  # then reused. See README Step 3.
+  GitHubConnectionArn:
+    Type: String
+    Description: >
+      ARN of the AWS CodeStar Connection to GitHub.
+      Create in: AWS Console → Developer Tools → Connections.
+      Looks like: arn:aws:codestar-connections:us-east-1:123456789:connection/xxxx
+
+  ArtifactBucketName:
+    Type: String
+    Description: >
+      S3 bucket name for CodePipeline artifacts (must already exist).
+      Example: my-pipeline-artifacts-123456
+
+  # ── Stack parameters forwarded to hardened-ec2.yaml ──
+  Environment:
+    Type: String
+    AllowedValues: [dev, stage, prod]
+
+  StackOwner:
+    Type: String
+
+  OSType:
+    Type: String
+    AllowedValues: [Ubuntu, RockyLinux]
+
+  OSVersion:
+    Type: String
+
+  InstanceType:
+    Type: String
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+
+  VolumeSize:
+    Type: Number
+    MinValue: 20
+    MaxValue: 500
+
+  DeleteVolumeOnTermination:
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  EnableDetailedMonitoring:
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  EnableTerminationProtection:
+    Type: String
+    AllowedValues: ["true", "false"]
+
+  VpcCIDR:
+    Type: String
+
+  SubnetCIDR:
+    Type: String
+
+  NATSubnetCIDR:
+    Type: String
+
+  PatchSchedule:
+    Type: String
+
+  LogRetentionDays:
+    Type: Number
+    AllowedValues: [1, 3, 7, 14, 30, 60, 90, 180, 365]
+
+  SnapshotRetentionCount:
+    Type: Number
+
+  SnapshotTime:
+    Type: String
+
+  AlarmEmail:
+    Type: String
+
+  CPUAlarmThreshold:
+    Type: Number
+
+  DiskAlarmThreshold:
+    Type: Number
+
+#########################################
+# RESOURCES
+#########################################
+
+Resources:
+
+  # ── IAM Role for CodePipeline ──────────────
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub "arn:aws:s3:::${ArtifactBucketName}"
+                  - !Sub "arn:aws:s3:::${ArtifactBucketName}/*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:GetTemplate
+                  - cloudformation:ValidateTemplate
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !GetAtt CFNDeployRole.Arn
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  # ── IAM Role for CloudFormation deploy ─────
+  CFNDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+        - arn:aws:iam::aws:policy/IAMFullAccess
+
+  # ── CodePipeline ───────────────────────────
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub "HardenedEC2-Pipeline-${Environment}"
+      RoleArn: !GetAtt PipelineRole.Arn
+
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucketName
+
+      Stages:
+
+        # Stage 1: Pull source from GitHub on every commit to main
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner:    AWS
+                Provider: CodeStarSourceConnection
+                Version:  "1"
+              Configuration:
+                ConnectionArn:        !Ref GitHubConnectionArn
+                FullRepositoryId:     !Sub "${GitHubOwner}/${GitHubRepo}"
+                BranchName:           !Ref GitHubBranch
+                OutputArtifactFormat: CODE_ZIP
+                DetectChanges:        true
+              OutputArtifacts:
+                - Name: SourceArtifact
+
+        # Stage 2: Deploy the CFN template from the repo
+        - Name: Deploy
+          Actions:
+            - Name: DeployCFN
+              ActionTypeId:
+                Category: Deploy
+                Owner:    AWS
+                Provider: CloudFormation
+                Version:  "1"
+              InputArtifacts:
+                - Name: SourceArtifact
+              Configuration:
+                ActionMode:   CREATE_UPDATE
+                StackName:    !Sub "hardened-ec2-${Environment}"
+                TemplatePath: "SourceArtifact::cloudformation/hardened-ec2.yaml"
+                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM
+                RoleArn:      !GetAtt CFNDeployRole.Arn
+                ParameterOverrides: !Sub |
+                  {
+                    "Environment":                "${Environment}",
+                    "StackOwner":                 "${StackOwner}",
+                    "OSType":                     "${OSType}",
+                    "OSVersion":                  "${OSVersion}",
+                    "InstanceType":               "${InstanceType}",
+                    "VolumeSize":                 "${VolumeSize}",
+                    "DeleteVolumeOnTermination":  "${DeleteVolumeOnTermination}",
+                    "EnableDetailedMonitoring":   "${EnableDetailedMonitoring}",
+                    "EnableTerminationProtection":"${EnableTerminationProtection}",
+                    "VpcCIDR":                    "${VpcCIDR}",
+                    "SubnetCIDR":                 "${SubnetCIDR}",
+                    "NATSubnetCIDR":              "${NATSubnetCIDR}",
+                    "PatchSchedule":              "${PatchSchedule}",
+                    "LogRetentionDays":           "${LogRetentionDays}",
+                    "SnapshotRetentionCount":     "${SnapshotRetentionCount}",
+                    "SnapshotTime":               "${SnapshotTime}",
+                    "AlarmEmail":                 "${AlarmEmail}",
+                    "CPUAlarmThreshold":          "${CPUAlarmThreshold}",
+                    "DiskAlarmThreshold":         "${DiskAlarmThreshold}"
+                  }
+
+#########################################
+# OUTPUTS
+#########################################
+
+Outputs:
+  PipelineURL:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/HardenedEC2-Pipeline-${Environment}/view"
+    Description: Click to view pipeline status in AWS Console

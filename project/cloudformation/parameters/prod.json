@@ -1,0 +1,21 @@
+[
+  { "ParameterKey": "Environment",                 "ParameterValue": "prod" },
+  { "ParameterKey": "StackOwner",                  "ParameterValue": "your-name" },
+  { "ParameterKey": "OSType",                      "ParameterValue": "RockyLinux" },
+  { "ParameterKey": "OSVersion",                   "ParameterValue": "9" },
+  { "ParameterKey": "InstanceType",                "ParameterValue": "m5.large" },
+  { "ParameterKey": "VolumeSize",                  "ParameterValue": "50" },
+  { "ParameterKey": "DeleteVolumeOnTermination",   "ParameterValue": "false" },
+  { "ParameterKey": "EnableDetailedMonitoring",    "ParameterValue": "true" },
+  { "ParameterKey": "EnableTerminationProtection", "ParameterValue": "true" },
+  { "ParameterKey": "VpcCIDR",                     "ParameterValue": "10.20.0.0/16" },
+  { "ParameterKey": "SubnetCIDR",                  "ParameterValue": "10.20.1.0/24" },
+  { "ParameterKey": "NATSubnetCIDR",               "ParameterValue": "10.20.0.0/24" },
+  { "ParameterKey": "PatchSchedule",               "ParameterValue": "cron(0 1 ? * SAT *)" },
+  { "ParameterKey": "LogRetentionDays",            "ParameterValue": "365" },
+  { "ParameterKey": "SnapshotRetentionCount",      "ParameterValue": "30" },
+  { "ParameterKey": "SnapshotTime",                "ParameterValue": "01:00" },
+  { "ParameterKey": "AlarmEmail",                  "ParameterValue": "you@example.com" },
+  { "ParameterKey": "CPUAlarmThreshold",           "ParameterValue": "75" },
+  { "ParameterKey": "DiskAlarmThreshold",          "ParameterValue": "80" }
+]
