@@ -219,7 +219,7 @@ Resources:
               Configuration:
                 ActionMode:   CREATE_UPDATE
                 StackName:    !Sub "hardened-ec2-${Environment}"
-                TemplatePath: "SourceArtifact::cloudformation/hardened-ec2.yaml"
+                TemplatePath: "SourceArtifact::project/cloudformation/hardened-ec2.yaml"
                 Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM
                 RoleArn:      !GetAtt CFNDeployRole.Arn
                 ParameterOverrides: !Sub |
