@@ -128,6 +128,10 @@ header "Step 3: Configuration"
 
 ask "AWS Region (e.g. us-east-1):"
 read -r AWS_REGION
+export AWS_REGION
+
+ask "AWS Region (e.g. us-east-1):"
+read -r AWS_REGION
 
 ask "Your name or team (Owner tag, e.g. platform-team):"
 read -r STACK_OWNER
