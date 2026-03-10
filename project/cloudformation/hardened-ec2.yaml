@@ -912,18 +912,18 @@ Resources:
   PatchAssociation:
     Type: AWS::SSM::Association
     Properties:
-      Name:               AWS-RunPatchBaseline
-      ScheduleExpression: !Ref PatchSchedule
+      Name:                    AWS-RunPatchBaseline
+      ScheduleExpression:      !Ref PatchSchedule
       ApplyOnlyAtCronInterval: true
-      WaitForSuccessTimeoutSeconds: 300
+      Parameters:
+        Operation:
+          - Install
+        RebootOption:
+          - RebootIfNeeded
       Targets:
         - Key:    tag:PatchGroup
           Values:
             - !Sub "hardened-${Environment}"
-
-#########################################
-# EBS SNAPSHOT LIFECYCLE
-#########################################
 
   EBSSnapshotPolicy:
     Type: AWS::DLM::LifecyclePolicy
