@@ -59,25 +59,45 @@ Metadata:
           - DiskAlarmThreshold
 
     ParameterLabels:
-      Environment:                { default: "Deployment environment" }
-      StackOwner:                 { default: "Owner name or team (for tagging)" }
-      OSType:                     { default: "Operating system" }
-      OSVersion:                  { default: "OS version string" }
-      InstanceType:               { default: "EC2 instance type" }
-      VolumeSize:                 { default: "Root EBS volume size (GB)" }
-      DeleteVolumeOnTermination:  { default: "Delete EBS volume on termination?" }
-      EnableDetailedMonitoring:   { default: "Enable 1-minute CloudWatch metrics?" }
-      EnableTerminationProtection:{ default: "Protect instance from accidental termination?" }
-      VpcCIDR:                    { default: "VPC CIDR block" }
-      SubnetCIDR:                 { default: "Private subnet CIDR block" }
-      NATSubnetCIDR:              { default: "Public subnet CIDR block (for NAT gateway)" }
-      PatchSchedule:              { default: "SSM Patch Manager cron schedule (UTC)" }
-      LogRetentionDays:           { default: "CloudWatch log retention (days)" }
-      SnapshotRetentionCount:     { default: "Number of daily EBS snapshots to keep" }
-      SnapshotTime:               { default: "Daily snapshot time (HH:MM UTC)" }
-      AlarmEmail:                 { default: "Email address for CloudWatch alarm notifications" }
-      CPUAlarmThreshold:          { default: "CPU % threshold to trigger alarm (e.g. 80)" }
-      DiskAlarmThreshold:         { default: "Disk used % threshold to trigger alarm (e.g. 85)" }
+      Environment:
+        default: "Deployment environment"
+      StackOwner:
+        default: "Owner name or team (for tagging)"
+      OSType:
+        default: "Operating system"
+      OSVersion:
+        default: "OS version string"
+      InstanceType:
+        default: "EC2 instance type"
+      VolumeSize:
+        default: "Root EBS volume size (GB)"
+      DeleteVolumeOnTermination:
+        default: "Delete EBS volume on termination?"
+      EnableDetailedMonitoring:
+        default: "Enable 1-minute CloudWatch metrics?"
+      EnableTerminationProtection:
+        default: "Protect instance from accidental termination?"
+      VpcCIDR:
+        default: "VPC CIDR block"
+      SubnetCIDR:
+        default: "Private subnet CIDR block"
+      NATSubnetCIDR:
+        default: "Public subnet CIDR block (for NAT gateway)"
+      PatchSchedule:
+        default: "SSM Patch Manager cron schedule (UTC)"
+      LogRetentionDays:
+        default: "CloudWatch log retention (days)"
+      SnapshotRetentionCount:
+        default: "Number of daily EBS snapshots to keep"
+      SnapshotTime:
+        default: "Daily snapshot time HH:MM UTC"
+      AlarmEmail:
+        default: "Email address for CloudWatch alarm notifications"
+      CPUAlarmThreshold:
+        default: "CPU percent threshold to trigger alarm"
+      DiskAlarmThreshold:
+        default: "Disk used percent threshold to trigger alarm"
+
 
 #########################################
 # PARAMETERS
@@ -202,7 +222,7 @@ Parameters:
 
   SnapshotTime:
     Type: String
-    Description: Daily snapshot time UTC in HH:MM format. Example 03:00
+    Description: "Daily snapshot time UTC in HH:MM format. Example 03:00"
     AllowedPattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
     ConstraintDescription: "Must be HH:MM e.g. 03:00"
 
