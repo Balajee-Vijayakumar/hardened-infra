@@ -914,6 +914,8 @@ Resources:
     Properties:
       Name:               AWS-RunPatchBaseline
       ScheduleExpression: !Ref PatchSchedule
+      ApplyOnlyAtCronInterval: true
+      WaitForSuccessTimeoutSeconds: 300
       Targets:
         - Key:    tag:PatchGroup
           Values:
