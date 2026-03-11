@@ -239,6 +239,11 @@ Parameters:
     MinValue: 1
     MaxValue: 100
 
+  KeyPairName:
+    Type: String
+    Default: ""
+    Description: "EC2 Key Pair name for SSH access (leave empty for SSM-only access)"
+
   DiskAlarmThreshold:
     Type: Number
     Description: Disk used % that triggers an alarm. Recommended 85.

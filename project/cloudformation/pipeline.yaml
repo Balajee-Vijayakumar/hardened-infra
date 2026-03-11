@@ -108,6 +108,11 @@ Parameters:
   CPUAlarmThreshold:
     Type: Number
 
+  KeyPairName:
+    Type: String
+    Default: ""
+    Description: "EC2 Key Pair name for SSH access (optional)"
+
   DiskAlarmThreshold:
     Type: Number
 
@@ -242,7 +247,8 @@ Resources:
                     "SnapshotTime":               "${SnapshotTime}",
                     "AlarmEmail":                 "${AlarmEmail}",
                     "CPUAlarmThreshold":          "${CPUAlarmThreshold}",
-                    "DiskAlarmThreshold":         "${DiskAlarmThreshold}"
+                    "DiskAlarmThreshold":         "${DiskAlarmThreshold}",
+                    "KeyPairName":              "${KeyPairName}"
                   }
 
 #########################################
