@@ -126,29 +126,31 @@ check_deps
 # =============================================================================
 header "Step 3: Configuration"
 
-# Auto-detect region from EC2 metadata
+# Auto-detect region from EC2 instance metadata (works when running on EC2)
 DETECTED_REGION=$(curl -s --connect-timeout 2 \
   http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null || echo "")
+
+# Also check AWS CLI config as fallback
 if [[ -z "$DETECTED_REGION" ]]; then
   DETECTED_REGION=$(aws configure get region 2>/dev/null || echo "")
 fi
+
 if [[ -n "$DETECTED_REGION" ]]; then
-  info "Auto-detected region: $DETECTED_REGION"
-  ask "AWS Region [$DETECTED_REGION]:"
+  info "Auto-detected region: ${BOLD}$DETECTED_REGION${RESET}"
+  ask "AWS Region [${DETECTED_REGION}]:"
   read -r AWS_REGION
   AWS_REGION="${AWS_REGION:-$DETECTED_REGION}"
 else
-  ask "AWS Region (e.g. ap-south-1):"
+  ask "AWS Region (e.g. us-east-1):"
   read -r AWS_REGION
 fi
-[[ -z "$AWS_REGION" ]] && error "Region cannot be empty."
+
+# Validate region is not empty
+[[ -z "$AWS_REGION" ]] && error "Region cannot be empty. Re-run and enter your AWS region (e.g. ap-south-1)"
+
+# Export so all AWS CLI calls in this session use it
 export AWS_DEFAULT_REGION="$AWS_REGION"
 success "Region set to: $AWS_REGION"
-export AWS_REGION
-
-# Auto-detect region from EC2 metadata
-DETECTED_REGION=$(curl -s --connect-timeout 2 \
-  http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null || echo "")
 
 ask "Your name or team (Owner tag, e.g. platform-team):"
 read -r STACK_OWNER
@@ -202,6 +204,69 @@ read -r IN; IN="${IN:-no}"; [[ "$IN" =~ ^(yes|y)$ ]] && DETAILED_MON="true" || D
 
 ask "Enable termination protection? (yes/no) [no]:"
 read -r IN; IN="${IN:-no}"; [[ "$IN" =~ ^(yes|y)$ ]] && TERM_PROT="true" || TERM_PROT="false"
+
+divider
+echo -e "  ${BOLD}Key Pair (optional — only needed if you want SSH access):${RESET}"
+echo -e "  ${DIM}Note: Instance is accessible via SSM without any key pair.${RESET}"
+
+# List existing key pairs
+EXISTING_KEYS=$(aws ec2 describe-key-pairs --region "$AWS_REGION" \
+  --query 'KeyPairs[*].KeyName' --output text 2>/dev/null | tr '\t' '\n')
+
+if [[ -n "$EXISTING_KEYS" ]]; then
+  echo -e "\n  ${BOLD}Existing key pairs in $AWS_REGION:${RESET}"
+  i=1
+  while IFS= read -r key; do
+    echo -e "  $i) $key"
+    i=$((i+1))
+  done <<< "$EXISTING_KEYS"
+  echo -e "  $i) Create a new key pair"
+  echo -e "  $((i+1))) Skip — use SSM only (no key pair)"
+  ask "Choice [${i+1}]:"
+  read -r KEY_CHOICE
+  KEY_CHOICE="${KEY_CHOICE:-$((i+1))}"
+
+  TOTAL_OPTIONS=$((i+1))
+  if [[ "$KEY_CHOICE" == "$TOTAL_OPTIONS" ]]; then
+    KEY_PAIR_NAME=""
+    info "No key pair — SSM access only."
+  elif [[ "$KEY_CHOICE" == "$((TOTAL_OPTIONS-1))" ]]; then
+    ask "New key pair name [hardened-ec2-${ENVIRONMENT}]:"
+    read -r KEY_PAIR_NAME; KEY_PAIR_NAME="${KEY_PAIR_NAME:-hardened-ec2-${ENVIRONMENT}}"
+    info "Creating key pair: $KEY_PAIR_NAME"
+    aws ec2 create-key-pair \
+      --key-name "$KEY_PAIR_NAME" \
+      --region "$AWS_REGION" \
+      --query 'KeyMaterial' \
+      --output text > "${KEY_PAIR_NAME}.pem"
+    chmod 400 "${KEY_PAIR_NAME}.pem"
+    success "Key pair created → ${KEY_PAIR_NAME}.pem  (save this file — shown only once!)"
+  else
+    KEY_PAIR_NAME=$(echo "$EXISTING_KEYS" | sed -n "${KEY_CHOICE}p")
+    success "Using existing key pair: $KEY_PAIR_NAME"
+  fi
+else
+  echo -e "  ${DIM}No existing key pairs found.${RESET}"
+  echo -e "  1) Create a new key pair"
+  echo -e "  2) Skip — use SSM only (no key pair)"
+  ask "Choice [2]:"
+  read -r KEY_CHOICE; KEY_CHOICE="${KEY_CHOICE:-2}"
+  if [[ "$KEY_CHOICE" == "1" ]]; then
+    ask "New key pair name [hardened-ec2-${ENVIRONMENT}]:"
+    read -r KEY_PAIR_NAME; KEY_PAIR_NAME="${KEY_PAIR_NAME:-hardened-ec2-${ENVIRONMENT}}"
+    info "Creating key pair: $KEY_PAIR_NAME"
+    aws ec2 create-key-pair \
+      --key-name "$KEY_PAIR_NAME" \
+      --region "$AWS_REGION" \
+      --query 'KeyMaterial' \
+      --output text > "${KEY_PAIR_NAME}.pem"
+    chmod 400 "${KEY_PAIR_NAME}.pem"
+    success "Key pair created → ${KEY_PAIR_NAME}.pem  (save this file — shown only once!)"
+  else
+    KEY_PAIR_NAME=""
+    info "No key pair — SSM access only."
+  fi
+fi
 
 divider
 info "Networking (press Enter to accept defaults)"
@@ -430,6 +495,7 @@ deploy_cloudformation() {
     "ParameterKey=AlarmEmail,ParameterValue=$ALARM_EMAIL"
     "ParameterKey=CPUAlarmThreshold,ParameterValue=$CPU_THRESH"
     "ParameterKey=DiskAlarmThreshold,ParameterValue=$DISK_THRESH"
+    "ParameterKey=KeyPairName,ParameterValue=$KEY_PAIR_NAME"
   )
 
   STACK_STATUS=$(aws cloudformation describe-stacks \
